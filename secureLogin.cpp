@@ -81,14 +81,19 @@ void initialize_user_database(const std::string& filename) {
         return;
     }
 
-    std::vector<User> default_users = {
-        {"scientist", simple_hash("password123")},
-        {"engineer", simple_hash("devpass")},
-        {"security", simple_hash("securepass!")}
+    struct UserWithMFA {
+        std::string username;
+        std::string hashed_password;
+        int mfa_number;
+    };
+    std::vector<UserWithMFA> default_users = {
+        {"scientist", simple_hash("password123"), 1234567890},
+        {"engineer", simple_hash("DevPass1!"), 1000000001},
+        {"security", simple_hash("SecurePass!1"), 1000000002}
     };
 
     for (const auto& user : default_users) {
-        outfile << user.username << " " << user.hashed_password << std::endl;
+        outfile << user.username << " " << user.hashed_password << " " << user.mfa_number << std::endl;
     }
 
     outfile.close();
