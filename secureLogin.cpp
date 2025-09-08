@@ -18,20 +18,53 @@ std::string simple_hash(const std::string& password) {
     return std::to_string(hash);
 }
 
+#if defined(_WIN32)
+#include <conio.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
+
 std::string get_secure_password() {
     std::string password;
+#if defined(_WIN32)
     char ch;
-    while ((ch = std::cin.get()) != '\n' && ch != EOF) {
+    while ((ch = _getch()) != '\r' && ch != '\n') {
         if (ch == 8 || ch == 127) {
             if (!password.empty()) {
                 password.pop_back();
-                std::cout << "\b \b"; 
+                std::cout << "\b \b";
+            }
+        } else if (ch == 3) {
+            exit(1);
+        } else {
+            password += ch;
+            std::cout << "*";
+        }
+    }
+#else
+    struct termios oldt, newt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    char ch;
+    while (true) {
+        ch = getchar();
+        if (ch == '\n' || ch == EOF) break;
+        if (ch == 8 || ch == 127) {
+            if (!password.empty()) {
+                password.pop_back();
+                std::cout << "\b \b";
             }
         } else {
             password += ch;
-            std::cout << "*"; 
+            std::cout << "*";
         }
     }
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+#endif
+    std::cout << std::endl;
     return password;
 }
 
@@ -107,9 +140,9 @@ int main() {
         for (const auto& user : users) {
             if (user.username == username_input) {
                 if (simple_hash(password_input) == user.hashed_password) {
+                    login_successful = true;
                     std::cout << "\n\nLogin successful!" << std::endl;
                     std::cout << "Welcome, " << user.username << "!" << std::endl;
-                    login_successful = true;
                 }
                 break;
             }
